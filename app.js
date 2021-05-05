@@ -2,10 +2,13 @@ const express = require("express")
 const cros = require("cors")
 const db = require("./database/mySql")
 const port = 4000
+const fs = require("fs")
 var app = express()
+const path=require("path")
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.use("/download",express.static(path.join(__dirname+"/download")))
 
 app.use(cros("http://localhost:3000"))
 
@@ -76,7 +79,7 @@ app.get("/soldertableget", (req, res) => {
 })
 
 app.post("/datefilter", (req, res) => {
-    const { from, to } = req.body    
+    const { from, to } = req.body
     const fromdate = from
     const todate = to
     const daterange = `SELECT * FROM soldercustomersdatas WHERE DATE BETWEEN '${fromdate} 00:00:00' and '${todate} 00:00:00'`
@@ -101,58 +104,93 @@ app.post("/datefiltervaccume", (req, res) => {
         }
     });
 })
-data = [
-    {
-        "userId": 1,
-        "id": 1,
-        "title": "delectus aut autem",
-        "completed": false
-    },
-    {
-        "userId": 1,
-        "id": 2,
-        "title": "quis ut nam facilis et officia qui",
-        "completed": false
-    },
-    {
-        "userId": 1,
-        "id": 3,
-        "title": "fugiat veniam minus",
-        "completed": false
-    },
-    {
-        "userId": 1,
-        "id": 4,
-        "title": "et porro tempora",
-        "completed": true
-    },
-    {
-        "userId": 1,
-        "id": 5,
-        "title": "laboriosam mollitia et enim quasi adipisci quia provident illum",
-        "completed": false
-    }
-]
-// app.get("/exportexcel", (req, res) => {
-// var Excel = require('exceljs');
-// var workbook = new Excel.Workbook();
 
-// workbook.xlsx.readFile("./Sample 1 Vacuum lifter.xlsx")
-//     .then( async function () {
-//         var worksheet = workbook.getWorksheet(1);    
-//         console.log(workbook.getWorksheet())  
-//         // for (var i = 0; i < data.length; i++) {
-//         //     var row =await worksheet.getRow(Number(25) + Number(i)); //6 is a row
-//         //     row.getCell(1).value = data[i].userId;
-//         //     row.getCell(2).value = data[i].id;
-//         //     row.getCell(3).value = data[i].title;
-//         //     row.getCell(4).value = data[i].completed;
-//         //     row.getCell(5).value = data[i].userId;
-//         // }
+app.get("/exportvaccume", async (req, res) => {
+    const vaccumeformdata = new Promise(async (resolve, reject) => {
+        await db.query("SELECT * FROM customersdatas", function (err, result, fields) {
+            if (err) {
+                return resolve(false)
+            } else {
+                return resolve(result)
+            }
+        });
 
-//         // row.commit();
-//         // return workbook.xlsx.writeFile('new2.xlsx');
-//     })
-// })
+    })
+    const data = await vaccumeformdata
+    var Excel = require('exceljs');
+    var workbook = new Excel.Workbook();
+
+  const url=  await workbook.xlsx.readFile("./templates/vaccume.xlsx")
+        .then(async function () {
+            var worksheet = workbook.getWorksheet(1);
+            for (var i = 0; i < data.length; i++) {
+                var row = await worksheet.getRow(Number(22) + Number(i));
+                row.getCell(1).value = data[i].date;
+                row.getCell(2).value = data[i].shift;
+                row.getCell(3).value = data[i].machine_Sl_No;
+                row.getCell(4).value = data[i].process1_result;
+                row.getCell(5).value = data[i].process2_result;
+                row.getCell(6).value = data[i].process3_result;
+                row.getCell(7).value = data[i].process4_result;
+                row.getCell(8).value = data[i].process5_result;
+                row.getCell(9).value = data[i].process6_result;
+                row.getCell(10).value = data[i].process7_result;
+                row.getCell(11).value = data[i].process8_result;
+                row.getCell(12).value = data[i].process9_result;
+                row.getCell(13).value = data[i].checked_by;
+                row.getCell(14).value = data[i].description;
+            }
+
+            row.commit();
+            const path = `./download/vaccueme_${Date.now()}.xlsx`
+           await workbook.xlsx.writeFile(`${path}`);
+            const base64file = fs.readFileSync(path, { encoding: 'base64' })
+            const contentType = "data:@file/octet-stream;base64,"     
+            const url=await `http://localhost:${port}/${path}`
+            return url       
+        })
+    res.send(url)
+})
+
+app.get("/exportsoldering", async (req, res) => {
+    const vaccumeformdata = new Promise(async (resolve, reject) => {
+        await db.query("SELECT * FROM soldercustomersdatas", function (err, result, fields) {
+            if (err) {
+                return resolve(false)
+            } else {
+                return resolve(result)
+            }
+        });
+
+    })
+    const data = await vaccumeformdata
+    var Excel = require('exceljs');
+    var workbook = new Excel.Workbook();
+
+  const url=  await workbook.xlsx.readFile("./templates/soldering.xlsx")
+        .then(async function () {
+            var worksheet = workbook.getWorksheet(1);
+            for (var i = 0; i < data.length; i++) {
+                var row = await worksheet.getRow(Number(16) + Number(i));
+                row.getCell(1).value = data[i].date;
+                row.getCell(2).value = data[i].shift;
+                row.getCell(3).value = data[i].machine_Sl_No;
+                row.getCell(4).value = data[i].station;
+                row.getCell(5).value = data[i].catridge_used;
+                row.getCell(6).value = data[i].temperature;
+                row.getCell(7).value = data[i].checked_by;
+                row.getCell(8).value = data[i].status;        
+            }
+
+            row.commit();
+            const path = `./download/soldering_${Date.now()}.xlsx`
+           await workbook.xlsx.writeFile(`${path}`);
+            const base64file = fs.readFileSync(path, { encoding: 'base64' })
+            const contentType = "data:@file/octet-stream;base64,"
+             const url=await `http://localhost:${port}/${path}`
+             return url
+        })        
+    res.send(url)
+})
 
 app.listen(port, () => { console.log(`App running on http://localhost:${port}`) })
