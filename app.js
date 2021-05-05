@@ -33,7 +33,7 @@ app.get("/soldertablecreate", (req, res) => {
 })
 app.post("/soldertablesend", (req, res) => {
     const { date, shift, machine_Sl_No, station, catridge_used, temperature, checked_by, status } = req.body
-    var sql = `INSERT INTO soldercustomersdatas (date,shift,machine_Sl_No,station,catridge_used,temperature,checked_by,status) VALUES ('${date}','${shift}','${machine_Sl_No}','${station}','${catridge_used}','${temperature}','${checked_by}','${status}')`;
+    var sql = `INSERT INTO soldercustomersdatas (date,shift,machine_Sl_No,station,catridge_used,temperature,checked_by,status) VALUES ('${date}','${shift}','not provide','${station}','${catridge_used}','${temperature}','${checked_by}','${status}')`;
     db.query(sql, function (err, result) {
         if (err) {
             return res.send(err)
